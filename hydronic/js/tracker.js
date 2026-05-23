@@ -6,6 +6,7 @@
 
   let visitStart = null;
   let sessionSent = false;
+  let cachedParams = null;
 
   function getDeviceInfo() {
     const ua = navigator.userAgent;
@@ -48,30 +49,29 @@
     return `${secs} sec`;
   }
 
-  function sendTimeSpent() {
-    if (sessionSent || !visitStart) return;
+  function sendVisit() {
+    if (sessionSent || !cachedParams) return;
     sessionSent = true;
-    const duration = formatDuration(Date.now() - visitStart);
-    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      visit_time      : 'Session Ended',
-      visitor_country : '—',
-      visitor_region  : '—',
-      visitor_city    : '—',
-      visitor_lat     : '—',
-      visitor_lon     : '—',
-      maps_link       : '—',
-      visitor_device  : '—',
-      visitor_os      : '—',
-      visitor_browser : '—',
-      referrer        : `Time spent: ${duration}`,
-      time_spent      : duration,
+
+    const duration = visitStart ? formatDuration(Date.now() - visitStart) : 'Unknown';
+
+    const payload = {
+      service_id    : EMAILJS_SERVICE_ID,
+      template_id   : EMAILJS_TEMPLATE_ID,
+      user_id       : EMAILJS_PUBLIC_KEY,
+      template_params: Object.assign({}, cachedParams, { time_spent: duration })
+    };
+
+    fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method   : 'POST',
+      headers  : { 'Content-Type': 'application/json' },
+      keepalive: true,
+      body     : JSON.stringify(payload)
     }).catch(() => {});
   }
 
   async function trackVisitor() {
     try {
-      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
-
       let country = 'Unknown', region = 'Unknown',
           city = 'Unknown', lat = '-', lon = '-';
 
@@ -87,7 +87,7 @@
 
       const { os, browser, device, timeVisited } = getDeviceInfo();
 
-      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      cachedParams = {
         visit_time      : timeVisited,
         visitor_country : country,
         visitor_region  : region,
@@ -101,14 +101,15 @@
         visitor_os      : os,
         visitor_browser : browser,
         referrer        : document.referrer || 'Direct / Unknown',
-        time_spent      : 'still visiting...',
-      }).catch(() => {});
+        time_spent      : '...',
+      };
 
       visitStart = Date.now();
 
-      window.addEventListener('beforeunload', sendTimeSpent);
+      window.addEventListener('beforeunload', sendVisit);
+      window.addEventListener('pagehide', sendVisit);
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') sendTimeSpent();
+        if (document.visibilityState === 'hidden') sendVisit();
       });
 
     } catch(_) {}
