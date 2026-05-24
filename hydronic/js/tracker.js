@@ -154,13 +154,10 @@
       user_id        : EMAILJS_PUBLIC_KEY,
       template_params: params,
     });
-    const url  = 'https://api.emailjs.com/api/v1.0/email/send';
-    const blob = new Blob([body], { type: 'application/json' });
-    if (navigator.sendBeacon && navigator.sendBeacon(url, blob)) return;
-    fetch(url, {
-      method   : 'POST',
-      headers  : { 'Content-Type': 'application/json' },
-      keepalive: true,
+
+    fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body,
     }).catch(() => {});
   }
@@ -200,11 +197,6 @@
         region: d.region, city: d.city,
         lat: d.latitude, lon: d.longitude,
       })),
-      tryAPI('https://freeipapi.com/api/json', d => ({
-        ip: d.ipAddress, country: d.countryName,
-        region: d.regionName, city: d.cityName,
-        lat: d.latitude, lon: d.longitude,
-      })),
       tryAPI('https://ipinfo.io/json', d => {
         const [lat, lon] = (d.loc || '-,-').split(',');
         return {
@@ -217,7 +209,7 @@
   }
 
   window.addEventListener('beforeunload', sendVisit);
-  window.addEventListener('pagehide', sendVisit);
+  window.addEventListener('pagehide',     sendVisit);
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
