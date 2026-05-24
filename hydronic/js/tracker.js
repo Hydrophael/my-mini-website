@@ -6,7 +6,7 @@
   const EMAILJS_TEMPLATE_ID = 'template_75zl08i';
   const LS_KEY = '_vt_l';
   const SS_KEY = '_vt_s';
-  const LS_TTL = 30 * 60 * 1000;
+  const LS_TTL = 1 * 60 * 1000;
 
   function alreadySent() {
     try {
@@ -147,6 +147,7 @@
     click_count       : '0',
   };
 
+  // FIX: Hapus sendBeacon, pakai fetch murni tanpa credentials
   function doSend(params) {
     const body = JSON.stringify({
       service_id     : EMAILJS_SERVICE_ID,
@@ -190,6 +191,7 @@
     });
   }
 
+  // FIX: Hapus freeipapi.com karena CORS bermasalah, sisakan 2 API yang stabil
   function fetchLocation() {
     return Promise.any([
       tryAPI('https://ipapi.co/json/', d => ({
